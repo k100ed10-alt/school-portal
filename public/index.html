@@ -169,14 +169,14 @@
       (Project settings ← Your apps ← Web app ← SDK setup)
    ============================================================ */
 const firebaseConfig = {
-  apiKey: "PUT_YOUR_API_KEY",
-  authDomain: "PUT_PROJECT.firebaseapp.com",
-  projectId: "PUT_PROJECT_ID",
-  storageBucket: "PUT_PROJECT.appspot.com",
-  messagingSenderId: "PUT_SENDER_ID",
-  appId: "PUT_APP_ID"
+  apiKey: "AIzaSyCEqpctjEqvOLekfR3fs7A8qwa2V7AXFu8",
+  authDomain: "onlineclass-d632d.firebaseapp.com",
+  projectId: "onlineclass-d632d",
+  storageBucket: "onlineclass-d632d.firebasestorage.app",
+  messagingSenderId: "225216144640",
+  appId: "1:225216144640:web:bcc755411c6c1ff2d6bfe5"
 };
-const ADMIN_EMAIL = "teacher@example.com";   // بريد حساب المعلّم في Firebase Auth
+const ADMIN_EMAIL = "k100ed10@gmail.com";   // بريد حساب المعلّم في Firebase Auth
 const REGION = "us-central1";
 let db, fns, auth;
 const initializeApp = c => firebase.initializeApp(c);
@@ -392,6 +392,46 @@ function homeView(){
   return '<p class="eyebrow">أهلًا '+esc(me.name)+'</p><h1>مواد '+weekName(p.currentWeek)+'</h1>'+
     '<p class="sub">'+(portal==='paid'?'المواد المفتوحة في اشتراكك.':'اختر المادة لعرض حصصها الأسبوعية.')+'</p>'+
     note+'<div class="grid">'+cards+extra+'</div>'+addbtn;
+}
+function subjectView(){
+  const p=P(), s=subj(curSubject); let weeks='';
+  for(let w=1;w<=p.weeks;w++){
+    const ls=lessonsOf(p,s.id,w), open=openWeek===w;
+    weeks+='<div class="week '+(w===p.currentWeek?'now':'')+'" style="--c:'+s.color+'">'+
+      '<button class="whead" onclick="toggleWeek('+w+')">'+
+      '<span class="wname">'+weekName(w)+(w===p.currentWeek?'<span class="tag" style="--c:'+s.color+'">الأسبوع الحالي</span>':'')+'</span>'+
+      '<span class="meta">'+(ls.length?ls.length+' حصة':'—')+'</span></button>'+
+      (open?'<div class="wbody">'+(ls.length?ls.map(l=>'<div class="lesson"><div><div class="t">'+esc(l.title)+'</div>'+
+        '<div class="d">'+esc(l.time||'')+'</div></div>'+
+        (l.url?'<a class="join" style="--c:'+s.color+'" href="'+esc(l.url)+'" target="_blank" rel="noopener">دخول الحصة</a>'
+              :'<span class="meta">الرابط لم يُضف بعد</span>')+'</div>').join('')
+        :'<div class="empty">لا توجد حصص في هذا الأسبوع.</div>')+'</div>':'')+'</div>';
+  }
+  return '<button class="btn ghost small" onclick="view=\'home\';render()">رجوع للمواد</button>'+
+    '<h1 style="margin-top:14px;color:'+s.color+'">'+esc(s.name)+'</h1><p class="sub">حصص مرتبة حسب الأسبوع.</p>'+weeks;
+}
+function toggleWeek(w){ openWeek=(openWeek===w?null:w); render(); }
+function goLogin(w){ portal=w; view='login'; err=''; render(); }
+async function doLogin(){
+  const name=document.getElementById('nm').value.trim();
+  const phone=document.getElementById('ph').value.trim();
+  const code=document.getElementById('cd').value.trim();
+  if(!name){ err='اكتب اسمك أولًا.'; return render(); }
+  if(phone.replace(/\D/g,'').length<7){ err='اكتب رقم جوال صحيح.'; return render(); }
+  busy=true; err=''; render();
+  try{
+    const r=await call('verifyAccess')({portal, code, name, phone:intlPhone(phone)});
+    if(portal==='paid'){
+      livePortal=Object.assign({}, conf.portals.paid, {lessons:(r.data.portal||{}).lessons||{}});
+      unlocked = r.data.subjects || [];
+    }
+    me={name,phone}; isAdmin=false; view='home'; openWeek=P().currentWeek; err='';
+    logEntry('');
+  }catch(e){ err=(e.message||'').replace('FirebaseError: ','') || 'تعذّر الدخول.'; }
+  busy=false; render();
+}
+async function logEntry(sid){
+  try{ await addDoc(collection(db,'entries'), {n:me.name,p:intlPhone(me.phone),s:sid||'',g:portal,w:P().currentWeek,t:Date.now()}); }catch(e){}
 }
 function openSubject(id){ curSubject=id; view='subject'; openWeek=P().currentWeek; render(); logEntry(id); }
 async function payNow(){
