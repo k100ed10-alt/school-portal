@@ -79,15 +79,6 @@
   .steps{counter-reset:s;margin:16px 0 0;padding:0;list-style:none}
   .steps li{counter-increment:s;position:relative;padding:0 34px 14px 0;font-size:.93rem}
   .steps li::before{content:counter(s);position:absolute;right:0;top:2px;width:24px;height:24px;background:var(--gold);color:#fff;border-radius:50%;display:grid;place-items:center;font-size:.8rem}
-  .steps li strong{color:#0C7A70}
-  .price{font-family:"Noto Kufi Arabic",sans-serif;font-size:1.6rem;color:var(--gold);line-height:1.4}
-  .btn.pay{display:block;text-align:center;text-decoration:none;background:#12B0A0;color:#fff}
-  .btn.pay:hover{filter:brightness(1.08)}
-  .btn.wa{display:block;text-align:center;text-decoration:none;background:#1FA855;color:#fff;margin-top:12px}
-  .btn.wa:hover{filter:brightness(1.08)}
-  .paybox{margin-top:18px;background:#F1FAF9;border:1px solid #BFE6E1;border-radius:5px;padding:14px;text-align:center}
-  .paybox .lbl{font-size:.82rem;color:var(--muted)}
-  .paybox .pnum{font-family:"Noto Kufi Arabic",sans-serif;font-size:1.35rem;letter-spacing:1px;margin:6px 0 10px;color:#0C7A70}
 
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
   @media(min-width:620px){.grid{grid-template-columns:1fr 1fr 1fr}}
@@ -143,55 +134,11 @@
   .del{background:none;border:none;color:var(--warn);font-size:.85rem;padding:4px}
   .loading{text-align:center;color:var(--muted);padding:60px 0}
   @media (prefers-reduced-motion: reduce){*{transition:none!important}}
-</style><style>
-  .codebox{margin:18px 0 4px;background:#FFF8E7;border:1px solid #E7D6A8;border-radius:5px;padding:18px;text-align:center}
-  .codebox .code{font-family:'Noto Kufi Arabic',sans-serif;font-size:1.7rem;letter-spacing:3px;color:var(--gold);margin-bottom:12px;direction:ltr}
-  button[disabled]{opacity:.6;cursor:default}
 </style>
 </head>
 <body>
 <div id="app"><div class="loading">جارٍ التحميل…</div></div>
-<script>setTimeout(function(){var a=document.getElementById("app");if(a&&a.textContent.indexOf("جارٍ التحميل")>-1){a.innerHTML="<div class=\"login\"><div class=\"plate\"><h1>لم تُحمّل الصفحة</h1><p class=\"sub\">المتصفح لم يستطع تحميل مكتبات Firebase. تأكد من الاتصال بالإنترنت، ومن أن الملف مرفوع على استضافة https وليس مفتوحًا كملف محلي.</p></div></div>";}},6000);</script>
-<script type="module">
-/* ============================================================
-   ١) عبّئ هذه القيم من إعدادات مشروعك في Firebase
-      (Project settings ← Your apps ← Web app ← SDK setup)
-   ============================================================ */
-const firebaseConfig = {
-  apiKey: "PUT_YOUR_API_KEY",
-  authDomain: "PUT_PROJECT.firebaseapp.com",
-  projectId: "PUT_PROJECT_ID",
-  storageBucket: "PUT_PROJECT.appspot.com",
-  messagingSenderId: "PUT_SENDER_ID",
-  appId: "PUT_APP_ID"
-};
-const ADMIN_EMAIL = "teacher@example.com";   // بريد حساب المعلّم في Firebase Auth
-const REGION = "us-central1";
-const CDN = "https://www.gstatic.com/firebasejs/10.12.0/";
-
-/* ---- تحميل مكتبات Firebase مع رسالة واضحة عند الفشل ---- */
-let initializeApp, getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc,
-    query, orderBy, limit, getFunctions, httpsCallable, getAuth, signInWithEmailAndPassword, signOut;
-let db, fns, auth;
-const call = n => httpsCallable(fns, n);
-
-function panel(title, body){
-  document.getElementById('app').innerHTML =
-    '<div class="login"><div class="plate"><h1>'+title+'</h1><p class="sub">'+body+'</p></div></div>';
-}
-async function loadSdk(){
-  const [a, f, fu, au] = await Promise.all([
-    import(CDN+"firebase-app.js"), import(CDN+"firebase-firestore.js"),
-    import(CDN+"firebase-functions.js"), import(CDN+"firebase-auth.js")
-  ]);
-  ({initializeApp} = a);
-  ({getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, query, orderBy, limit} = f);
-  ({getFunctions, httpsCallable} = fu);
-  ({getAuth, signInWithEmailAndPassword, signOut} = au);
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app); fns = getFunctions(app, REGION); auth = getAuth(app);
-}
-
+<script>
 const SUBJECTS = [
   {id:'math',    name:'الرياضيات',           color:'#2563EB', mk:'٧'},
   {id:'science', name:'العلوم',              color:'#7C3AED', mk:'ع'},
@@ -201,78 +148,90 @@ const SUBJECTS = [
   {id:'english', name:'اللغة الإنجليزية',    color:'#0E7490', mk:'E'}
 ];
 const ORD = ['','الأول','الثاني','الثالث','الرابع','الخامس','السادس','السابع','الثامن','التاسع','العاشر','الحادي عشر','الثاني عشر'];
-const blankPortal = e => Object.assign({weeks:8,currentWeek:1,lessons:{},announce:'',groupUrl:'',groupLabel:'انضم للمجموعة'}, e||{});
+const K_CONF='portal-config', K_LOG='portal-log', K_ME='portal-me';
+
+const blankPortal = extra => Object.assign({weeks:8,currentWeek:1,lessons:{},announce:'',groupUrl:'',groupLabel:'انضم للمجموعة'}, extra||{});
 const DEFAULTS = {
-  siteTitle:'حصصنا الأونلاين', siteLine:'اختر بوابتك للدخول إلى حصص هذا الأسبوع.', cc:'968',
+  siteTitle:'حصصنا الأونلاين',
+  siteLine:'اختر بوابتك للدخول إلى حصص هذا الأسبوع.',
+  adminCode:'admin2026', cc:'966',
   portals:{
-    free: blankPortal({title:'البوابة العامة', desc:'الحصص الأساسية لكل طلاب الصف.'}),
-    paid: blankPortal({title:'بوابة المشتركين', desc:'حصص التقوية والمراجعة للمشتركين.',
-      price:'٣ ريال عماني', payNote:'يتولّد رمز دخولك تلقائيًا بعد نجاح الدفع.'})
+    free: blankPortal({title:'البوابة العامة', desc:'الحصص الأساسية لكل طلاب الصف.', code:'1234'}),
+    paid: blankPortal({title:'بوابة المشتركين', desc:'حصص التقوية والمراجعة للمشتركين.', price:'٣ ريال', payUrl:'', payNote:'بعد إتمام الدفع يصلك رمز الدخول على الواتساب خلال دقائق.', codes:[]})
   }
 };
 
-let conf=JSON.parse(JSON.stringify(DEFAULTS)), livePortal=null, adminPaidLessons={}, settings={freeCode:'',priceBaisa:3000};
+let conf=null, log=[], me={name:'',phone:''};
 let view='landing', portal='free', isAdmin=false, adminPortal='free';
-let curSubject=null, openWeek=null, err='', me={name:'',phone:''}, issued='', busy=false;
-let logRows=[], codeRows=[];
+let curSubject=null, openWeek=null, err='', recorded=new Set();
+
+async function sget(k,sh){ try{ const r=await window.storage.get(k,sh); return r?JSON.parse(r.value):null; }catch(e){ return null; } }
+async function sset(k,v,sh){ try{ await window.storage.set(k,JSON.stringify(v),sh); return true; }catch(e){ toast('تعذّر الحفظ، حاول مرة أخرى'); return false; } }
+const saveConf = () => sset(K_CONF, conf, true);
+const P  = () => conf.portals[portal];
+const AP = () => conf.portals[adminPortal];
+
+async function boot(){
+  const [c,l,m] = await Promise.all([sget(K_CONF,true), sget(K_LOG,true), sget(K_ME,false)]);
+  conf = JSON.parse(JSON.stringify(DEFAULTS));
+  if(c){
+    if(c.portals){
+      conf = Object.assign(conf, c);
+      conf.portals.free = Object.assign(blankPortal(DEFAULTS.portals.free), c.portals.free||{});
+      conf.portals.paid = Object.assign(blankPortal(DEFAULTS.portals.paid), c.portals.paid||{});
+    } else {  /* ترقية الإعدادات القديمة */
+      conf.adminCode = c.adminCode || conf.adminCode;
+      conf.cc = c.cc || conf.cc;
+      Object.assign(conf.portals.free, {
+        code:c.studentCode||'1234', weeks:c.weeks||8, currentWeek:c.currentWeek||1,
+        lessons:c.lessons||{}, announce:c.announce||'', groupUrl:c.groupUrl||'', groupLabel:c.groupLabel||'انضم للمجموعة'
+      });
+    }
+  }
+  if(!Array.isArray(conf.portals.paid.codes)) conf.portals.paid.codes = [];
+  log = Array.isArray(l)?l:[];
+  if(m) me=m;
+  render();
+}
+
+async function record(subjectId){
+  const key = portal+'|'+(subjectId||'login');
+  if(recorded.has(key)) return;
+  recorded.add(key);
+  const fresh = await sget(K_LOG,true);
+  log = Array.isArray(fresh)?fresh:log;
+  log.push({n:me.name,p:me.phone,s:subjectId||'',g:portal,w:P().currentWeek,t:Date.now()});
+  if(log.length>800) log = log.slice(-800);
+  await sset(K_LOG,log,true);
+}
 
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const subj = id => SUBJECTS.find(s=>s.id===id);
-const lessonsOf = (p,sid,w) => (((p&&p.lessons||{})[sid]||{})[w] || []);
+const lessonsOf = (p,sid,w) => ((p.lessons[sid]||{})[w] || []);
 const weekName = w => 'الأسبوع ' + (ORD[w]||w);
-const P = () => portal==='free' ? conf.portals.free : (livePortal||conf.portals.paid);
-function AP(){ if(adminPortal==='free') return conf.portals.free; const p=conf.portals.paid; p.lessons=adminPaidLessons; return p; }
-const fmt = ts => { const d=new Date(ts); return d.toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}); };
-function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2400); }
+const fmt = ts => { const d=new Date(ts);
+  return d.toLocaleDateString('ar-EG',{day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}); };
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
 function safeUrl(u){ u=String(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return /^https?:\/\//i.test(u)?u:''; }
-function intlPhone(raw){ let d=String(raw||'').replace(/\D/g,''); const cc=String(conf.cc||'').replace(/\D/g,'');
-  if(!d) return ''; if(d.startsWith('00')) d=d.slice(2); if(cc&&d.startsWith(cc)) return d; d=d.replace(/^0+/,''); return cc?cc+d:d; }
-
-/* ================= التحميل ================= */
-async function boot(){
-  if(firebaseConfig.apiKey.startsWith('PUT_')){
-    return panel('الموقع يحتاج إعداد',
-      'افتح ملف index.html وعبّئ بيانات مشروع Firebase في أعلى الشيفرة، ثم ارفعه على GitHub Pages أو Firebase Hosting. '+
-      'هذه النسخة لا تعمل داخل المعاينة لأنها تتصل بمشروعك على الإنترنت.');
-  }
-  try{ await loadSdk(); }
-  catch(e){
-    console.error(e);
-    return panel('تعذّر تحميل Firebase',
-      'تأكد من الاتصال بالإنترنت ومن أن الصفحة مرفوعة على استضافة (https) وليست مفتوحة كملف محلي.');
-  }
-  try{
-    const s=await getDoc(doc(db,'public','site'));
-    if(s.exists()){
-      const d=s.data();
-      conf=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), d);
-      conf.portals.free=Object.assign(blankPortal(DEFAULTS.portals.free), (d.portals||{}).free||{});
-      conf.portals.paid=Object.assign(blankPortal(DEFAULTS.portals.paid), (d.portals||{}).paid||{});
-      conf.portals.paid.lessons={};
-    }
-  }catch(e){ console.error(e); }
-
-  const ref=new URLSearchParams(location.search).get('ref');
-  if(ref){ history.replaceState({},'',location.pathname); await claim(ref); return; }
-  render();
+function intlPhone(raw){
+  let d=String(raw||'').replace(/\D/g,''); const cc=String(conf.cc||'').replace(/\D/g,'');
+  if(!d) return ''; if(d.startsWith('00')) d=d.slice(2);
+  if(cc && d.startsWith(cc)) return d;
+  d=d.replace(/^0+/,''); return cc?cc+d:d;
+}
+function newCode(){
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s='';
+  for(let i=0;i<8;i++){ s+=A[Math.floor(Math.random()*A.length)]; if(i===3) s+='-'; }
+  return s;
 }
 
-async function claim(ref){
-  view='claim'; issued=''; err='جارٍ التأكد من الدفع…'; render();
-  try{
-    const r=await call('claimCode')({ref});
-    issued=r.data.code; err='';
-  }catch(e){ err= e.message || 'تعذّر تأكيد الدفع. تواصل مع المعلّم.'; }
-  render();
-}
-
-/* ================= العرض ================= */
 function render(){
   const app=document.getElementById('app');
-  const flat={landing:landingView, login:loginView, buy:buyView, claim:claimView, teacher:teacherView};
-  app.innerHTML = flat[view] ? flat[view]() : shell({home:homeView,subject:subjectView,admin:adminView}[view]());
+  const v={landing:landingView, login:loginView, buy:buyView}[view];
+  app.innerHTML = v ? v() : shell({home:homeView,subject:subjectView,admin:adminView}[view]());
   const f=app.querySelector('[autofocus]'); if(f) f.focus();
 }
+
 function shell(inner){
   return '<div class="top '+(portal==='paid'&&!isAdmin?'paid':'')+'">'+
     '<div><div class="brand">'+esc(isAdmin?'لوحة المعلّم':P().title)+'</div>'+
@@ -282,232 +241,220 @@ function shell(inner){
 }
 function notices(){
   const p=P(); let out='';
-  if(p.announce&&p.announce.trim()) out+='<div class="banner"><div class="lbl">إعلان من المعلّم</div><div class="msg">'+esc(p.announce)+'</div></div>';
+  if(p.announce && p.announce.trim())
+    out += '<div class="banner"><div class="lbl">إعلان من المعلّم</div><div class="msg">'+esc(p.announce)+'</div></div>';
   const u=safeUrl(p.groupUrl);
-  if(u) out+='<div class="groupbar"><span class="meta">وصلك كل جديد أولًا بأول عبر مجموعة الصف.</span>'+
+  if(u) out += '<div class="groupbar"><span class="meta">وصلك كل جديد أولًا بأول عبر مجموعة الصف.</span>'+
     '<a href="'+esc(u)+'" target="_blank" rel="noopener">'+esc(p.groupLabel||'انضم للمجموعة')+'</a></div>';
   return out;
 }
+
+/* ===== الصفحة الرئيسية ===== */
 function landingView(){
   const f=conf.portals.free, p=conf.portals.paid;
   const chips=SUBJECTS.map(s=>'<span class="chip" style="--c:'+s.color+'">'+esc(s.name)+'</span>').join('');
   return '<div class="gate"><div class="hero"><div class="rainbow"></div><div class="heroin">'+
     '<h1>'+esc(conf.siteTitle)+'</h1><p class="sub" style="margin-bottom:0">'+esc(conf.siteLine)+'</p>'+
-    '<div class="chips">'+chips+'</div></div></div><div class="doors">'+
+    '<div class="chips">'+chips+'</div></div></div>'+
+   '<div class="doors">'+
     '<button class="door" onclick="goLogin(\'free\')"><span class="dn">'+esc(f.title)+'</span>'+
       '<span class="dd">'+esc(f.desc||'')+'</span><span class="df">بالرمز العام</span></button>'+
     '<button class="door gold" onclick="goLogin(\'paid\')"><span class="dn">'+esc(p.title)+'</span>'+
-      '<span class="dd">'+esc(p.desc||'')+'</span><span class="dp">'+esc(p.price||'بالاشتراك')+'</span></button></div>'+
-    '<button class="linkish" style="color:var(--muted)" onclick="view=\'teacher\';render()">دخول المعلّم</button></div>';
+      '<span class="dd">'+esc(p.desc||'')+'</span><span class="dp">'+esc(p.price||'بالاشتراك')+'</span></button>'+
+   '</div>'+
+   '<p class="hint">للمعلّم: ادخل من أي بوابة واستخدم رمز الإدارة.</p></div>';
 }
+function goLogin(which){ portal=which; view='login'; err=''; render(); }
+
+/* ===== الدخول ===== */
 function loginView(){
-  const p=P(), gold=portal==='paid';
+  const p=P(), gold = portal==='paid';
   return '<div class="login"><div class="plate '+(gold?'gold':'')+'">'+
-    '<h1>'+esc(p.title)+'</h1><p class="sub">'+(gold?'أدخل رمز الاشتراك الذي وصلك بعد الدفع.':'اكتب بياناتك ورمز الدخول العام.')+'</p>'+
+    '<h1>'+esc(p.title)+'</h1>'+
+    '<p class="sub">'+(gold?'أدخل رمز الاشتراك الذي وصلك بعد الدفع.':'اكتب بياناتك ورمز الدخول العام.')+'</p>'+
     '<label for="nm">الاسم الكامل</label><input id="nm" autofocus value="'+esc(me.name)+'" placeholder="مثال: سارة أحمد">'+
-    '<label for="ph">رقم الجوال</label><input id="ph" type="tel" inputmode="tel" value="'+esc(me.phone)+'" placeholder="9xxxxxxx">'+
-    '<label for="cd">'+(gold?'رمز الاشتراك':'رمز الدخول')+'</label><input id="cd" '+(gold?'dir="ltr" placeholder="ABCD-1234"':'type="password"')+'>'+
-    '<button class="btn '+(gold?'gold':'')+'" onclick="doLogin()"'+(busy?' disabled':'')+'>'+(busy?'لحظة…':'دخول')+'</button>'+
-    '<div class="err">'+esc(err)+'</div>'+
-    (gold?'<button class="linkish" onclick="view=\'buy\';err=\'\';render()">ما عندك رمز؟ اشترك الآن</button>':'')+
+    '<label for="ph">رقم الجوال</label><input id="ph" type="tel" inputmode="tel" value="'+esc(me.phone)+'" placeholder="05xxxxxxxx">'+
+    '<label for="cd">'+(gold?'رمز الاشتراك':'رمز الدخول')+'</label><input id="cd" '+(gold?'dir="ltr" placeholder="ABCD-1234"':'type="password" placeholder="الرمز الذي أعطاك إياه المعلّم"')+'>'+
+    '<button class="btn '+(gold?'gold':'')+'" onclick="doLogin()">دخول</button>'+
+    '<div class="err" id="er">'+esc(err)+'</div>'+
+    (gold?'<button class="linkish" onclick="view=\'buy\';render()">ما عندك رمز؟ اشترك الآن</button>':'')+
     '<p class="hint">يُستخدم رقمك لإرسال إعلانات الحصص فقط.</p>'+
-    '<button class="linkish" style="color:var(--muted)" onclick="view=\'landing\';err=\'\';render()">رجوع للصفحة الرئيسية</button></div></div>';
-}
-function buyView(){
-  const p=conf.portals.paid;
-  return '<div class="login"><div class="plate gold">'+
-    '<h1>الاشتراك في '+esc(p.title)+'</h1><p class="sub">'+esc(p.desc||'')+'</p>'+
-    '<div class="price">'+esc(p.price||'')+'</div>'+
-    '<ol class="steps"><li>اكتب اسمك ورقمك.</li><li>ادفع عبر <strong>ثواني</strong> بالبطاقة أو من محفظتك.</li>'+
-    '<li>'+esc(p.payNote||'يتولّد رمز دخولك تلقائيًا بعد نجاح الدفع.')+'</li></ol>'+
-    '<label for="bnm">الاسم الكامل</label><input id="bnm" value="'+esc(me.name)+'" placeholder="مثال: سارة أحمد">'+
-    '<label for="bph">رقم الجوال</label><input id="bph" type="tel" inputmode="tel" value="'+esc(me.phone)+'" placeholder="9xxxxxxx">'+
-    '<button class="btn pay" onclick="payNow()"'+(busy?' disabled':'')+'>'+(busy?'جارٍ فتح صفحة الدفع…':'ادفع عبر ثواني')+'</button>'+
-    '<div class="err">'+esc(err)+'</div>'+
-    '<button class="linkish" style="color:var(--muted)" onclick="view=\'login\';err=\'\';render()">رجوع لصفحة الدخول</button></div></div>';
-}
-function claimView(){
-  return '<div class="login"><div class="plate gold">'+
-    (issued ? '<h1>تم الدفع بنجاح</h1><p class="sub">هذا رمز اشتراكك — احتفظ به.</p>'+
-      '<div class="codebox"><div class="code">'+esc(issued)+'</div>'+
-      '<button class="btn ghost small" onclick="copyTxt(\''+esc(issued)+'\')">نسخ الرمز</button></div>'+
-      '<button class="btn gold" onclick="portal=\'paid\';view=\'login\';render()">ادخل الآن</button>'
-    : '<h1>تأكيد الدفع</h1><p class="sub">'+esc(err)+'</p>'+
-      '<button class="btn ghost" onclick="view=\'landing\';err=\'\';render()">رجوع</button>')+
+    '<button class="linkish" style="color:var(--muted)" onclick="view=\'landing\';err=\'\';render()">رجوع للصفحة الرئيسية</button>'+
   '</div></div>';
 }
-function teacherView(){
-  return '<div class="login"><div class="plate">'+
-    '<h1>دخول المعلّم</h1><p class="sub">حساب Firebase الخاص بك.</p>'+
-    '<label for="em">البريد</label><input id="em" autofocus dir="ltr" value="'+esc(ADMIN_EMAIL)+'">'+
-    '<label for="pw">كلمة المرور</label><input id="pw" type="password">'+
-    '<button class="btn" onclick="teacherLogin()"'+(busy?' disabled':'')+'>دخول</button>'+
-    '<div class="err">'+esc(err)+'</div>'+
-    '<button class="linkish" style="color:var(--muted)" onclick="view=\'landing\';err=\'\';render()">رجوع</button></div></div>';
+
+async function doLogin(){
+  const name=document.getElementById('nm').value.trim();
+  const phone=document.getElementById('ph').value.trim();
+  const code=document.getElementById('cd').value.trim();
+  if(code && code===conf.adminCode){ isAdmin=true; adminPortal=portal; me={name:'المعلّم',phone:'—'}; view='admin'; err=''; render(); return; }
+  if(!name){ err='اكتب اسمك أولًا.'; render(); return; }
+  if(phone.replace(/\D/g,'').length<7){ err='اكتب رقم جوال صحيح.'; render(); return; }
+
+  if(portal==='free'){
+    if(code!==conf.portals.free.code){ err='رمز الدخول غير صحيح. راجع معلّمك.'; render(); return; }
+  } else {
+    const fresh=await sget(K_CONF,true); if(fresh&&fresh.portals&&fresh.portals.paid) conf.portals.paid.codes=fresh.portals.paid.codes||[];
+    const c=conf.portals.paid.codes.find(x=>x.code.toUpperCase()===code.toUpperCase());
+    if(!c){ err='رمز الاشتراك غير صحيح أو منتهٍ.'; render(); return; }
+    const mine=intlPhone(phone);
+    if(c.by && c.by!==mine){ err='هذا الرمز مسجّل باسم مشترك آخر.'; render(); return; }
+    if(!c.by){ c.by=mine; c.name=name; c.ts=Date.now(); await saveConf(); }
+  }
+  me={name,phone}; err=''; isAdmin=false; recorded=new Set(); sset(K_ME,me,false);
+  view='home'; openWeek=P().currentWeek; render(); record(null);
 }
+function logout(){ view='landing'; isAdmin=false; err=''; recorded=new Set(); render(); }
+
+/* ===== صفحة الاشتراك ===== */
+function buyView(){
+  const p=conf.portals.paid, u=safeUrl(p.payUrl);
+  return '<div class="login"><div class="plate gold">'+
+    '<h1>الاشتراك في '+esc(p.title)+'</h1>'+
+    '<p class="sub">'+esc(p.desc||'')+'</p>'+
+    '<div style="font-family:\'Noto Kufi Arabic\',sans-serif;font-size:1.3rem;color:var(--gold)">'+esc(p.price||'')+'</div>'+
+    '<ol class="steps">'+
+      '<li>ادفع بالبطاقة (فيزا أو مدى) عبر صفحة الدفع الآمنة.</li>'+
+      '<li>'+esc(p.payNote||'يصلك رمز الاشتراك بعد إتمام الدفع.')+'</li>'+
+      '<li>ارجع لهذه الصفحة وأدخل الرمز مع اسمك ورقمك.</li>'+
+    '</ol>'+
+    (u ? '<a class="btn gold" style="display:block;text-align:center;text-decoration:none" href="'+esc(u)+'" target="_blank" rel="noopener">ادفع بالبطاقة</a>'
+       : '<p class="err">لم يُضف رابط الدفع بعد. تواصل مع المعلّم.</p>')+
+    '<button class="linkish" style="color:var(--muted)" onclick="view=\'login\';render()">رجوع لصفحة الدخول</button>'+
+  '</div></div>';
+}
+
+/* ===== المواد ===== */
 function homeView(){
   const p=P();
-  const cards=SUBJECTS.map(s=>{ const n=lessonsOf(p,s.id,p.currentWeek).length;
+  const cards=SUBJECTS.map(s=>{
+    const n=lessonsOf(p,s.id,p.currentWeek).length;
     return '<button class="subject" style="--c:'+s.color+'" onclick="openSubject(\''+s.id+'\')">'+
-      '<span class="mk">'+s.mk+'</span><span class="nm">'+esc(s.name)+'</span>'+
-      '<span class="ct '+(n?'on':'')+'">'+(n?n+' حصة هذا الأسبوع':'لا حصص هذا الأسبوع')+'</span></button>'; }).join('');
+      '<span class="mk">'+s.mk+'</span>'+
+      '<span class="nm">'+esc(s.name)+'</span>'+
+      '<span class="ct '+(n?'on':'')+'" style="--c:'+s.color+'">'+(n?n+' حصة هذا الأسبوع':'لا حصص هذا الأسبوع')+'</span></button>';
+  }).join('');
   return '<p class="eyebrow">أهلًا '+esc(me.name)+'</p><h1>مواد '+weekName(p.currentWeek)+'</h1>'+
     '<p class="sub">اختر المادة لعرض حصصها الأسبوعية.</p><div class="grid">'+cards+'</div>';
 }
+function openSubject(id){ curSubject=id; view='subject'; openWeek=P().currentWeek; render(); record(id); }
+
 function subjectView(){
   const p=P(), s=subj(curSubject); let weeks='';
   for(let w=1;w<=p.weeks;w++){
     const ls=lessonsOf(p,s.id,w), open=openWeek===w;
     weeks+='<div class="week '+(w===p.currentWeek?'now':'')+'" style="--c:'+s.color+'">'+
-      '<button class="whead" onclick="toggleWeek('+w+')">'+
+      '<button class="whead" onclick="toggleWeek('+w+')" aria-expanded="'+open+'">'+
       '<span class="wname">'+weekName(w)+(w===p.currentWeek?'<span class="tag" style="--c:'+s.color+'">الأسبوع الحالي</span>':'')+'</span>'+
       '<span class="meta">'+(ls.length?ls.length+' حصة':'—')+'</span></button>'+
-      (open?'<div class="wbody">'+(ls.length?ls.map(l=>'<div class="lesson"><div><div class="t">'+esc(l.title)+'</div>'+
-        '<div class="d">'+esc(l.time||'')+'</div></div>'+
+      (open?'<div class="wbody">'+(ls.length?ls.map(l=>
+        '<div class="lesson"><div><div class="t">'+esc(l.title)+'</div><div class="d">'+esc(l.time||'')+'</div></div>'+
         (l.url?'<a class="join" style="--c:'+s.color+'" href="'+esc(l.url)+'" target="_blank" rel="noopener">دخول الحصة</a>'
               :'<span class="meta">الرابط لم يُضف بعد</span>')+'</div>').join('')
-        :'<div class="empty">لا توجد حصص في هذا الأسبوع.</div>')+'</div>':'')+'</div>';
+        :'<div class="empty">لا توجد حصص في هذا الأسبوع. يضيفها المعلّم من لوحة التحكم.</div>')+'</div>':'')+'</div>';
   }
   return '<button class="btn ghost small" onclick="view=\'home\';render()">رجوع للمواد</button>'+
     '<h1 style="margin-top:14px;color:'+s.color+'">'+esc(s.name)+'</h1><p class="sub">حصص مرتبة حسب الأسبوع.</p>'+weeks;
 }
 function toggleWeek(w){ openWeek=(openWeek===w?null:w); render(); }
 
-/* ================= الطالب ================= */
-function goLogin(w){ portal=w; view='login'; err=''; render(); }
-async function doLogin(){
-  const name=document.getElementById('nm').value.trim();
-  const phone=document.getElementById('ph').value.trim();
-  const code=document.getElementById('cd').value.trim();
-  if(!name){ err='اكتب اسمك أولًا.'; return render(); }
-  if(phone.replace(/\D/g,'').length<7){ err='اكتب رقم جوال صحيح.'; return render(); }
-  busy=true; err=''; render();
-  try{
-    const r=await call('verifyAccess')({portal, code, name, phone:intlPhone(phone)});
-    if(portal==='paid') livePortal=Object.assign({}, conf.portals.paid, r.data.portal||{});
-    me={name,phone}; isAdmin=false; view='home'; openWeek=P().currentWeek; err='';
-    logEntry('');
-  }catch(e){ err=(e.message||'').replace('FirebaseError: ','') || 'تعذّر الدخول.'; }
-  busy=false; render();
-}
-async function logEntry(sid){
-  try{ await addDoc(collection(db,'entries'), {n:me.name,p:intlPhone(me.phone),s:sid||'',g:portal,w:P().currentWeek,t:Date.now()}); }catch(e){}
-}
-function openSubject(id){ curSubject=id; view='subject'; openWeek=P().currentWeek; render(); logEntry(id); }
-async function payNow(){
-  const name=document.getElementById('bnm').value.trim();
-  const phone=document.getElementById('bph').value.trim();
-  if(!name||phone.replace(/\D/g,'').length<7){ err='اكتب اسمك ورقمك أولًا.'; return render(); }
-  me={name,phone}; busy=true; err=''; render();
-  try{
-    const r=await call('createPayment')({name, phone:intlPhone(phone), origin:location.origin+location.pathname});
-    location.href=r.data.url;
-  }catch(e){ err=(e.message||'تعذّر فتح صفحة الدفع.'); busy=false; render(); }
-}
-function copyTxt(t){ try{ navigator.clipboard.writeText(t); toast('نُسخ'); }catch(e){ toast(t); } }
-function logout(){ if(isAdmin) signOut(auth); isAdmin=false; livePortal=null; view='landing'; err=''; render(); }
-
-/* ================= المعلّم ================= */
-async function teacherLogin(){
-  const em=document.getElementById('em').value.trim(), pw=document.getElementById('pw').value;
-  busy=true; err=''; render();
-  try{
-    await signInWithEmailAndPassword(auth, em, pw);
-    const [pd, st] = await Promise.all([getDoc(doc(db,'private','paid')), getDoc(doc(db,'private','settings'))]);
-    adminPaidLessons = pd.exists() ? (pd.data().lessons||{}) : {};
-    settings = st.exists() ? Object.assign({freeCode:'',priceBaisa:3000}, st.data()) : settings;
-    await loadAdminData();
-    isAdmin=true; view='admin'; err='';
-  }catch(e){ err='بيانات الدخول غير صحيحة.'; }
-  busy=false; render();
-}
-async function loadAdminData(){
-  try{
-    const es=await getDocs(query(collection(db,'entries'), orderBy('t','desc'), limit(300)));
-    logRows=es.docs.map(d=>Object.assign({id:d.id}, d.data()));
-    const cs=await getDocs(collection(db,'codes'));
-    codeRows=cs.docs.map(d=>Object.assign({code:d.id}, d.data()));
-  }catch(e){ console.error(e); }
-}
-async function saveAll(){
-  const pub=JSON.parse(JSON.stringify(conf)); pub.portals.paid.lessons={};
-  await setDoc(doc(db,'public','site'), pub);
-  await setDoc(doc(db,'private','paid'), {lessons:adminPaidLessons});
-  await setDoc(doc(db,'private','settings'), settings);
-}
+/* ===== لوحة المعلّم ===== */
 function adminView(){
   const p=AP(), gold=adminPortal==='paid';
   const opts=SUBJECTS.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('');
   let wopts=''; for(let w=1;w<=p.weeks;w++) wopts+='<option value="'+w+'" '+(w===p.currentWeek?'selected':'')+'>'+weekName(w)+'</option>';
-  const list=SUBJECTS.map(s=>{ let out='';
-    for(let w=1;w<=p.weeks;w++){ const ls=lessonsOf(p,s.id,w); if(!ls.length) continue;
+
+  const list=SUBJECTS.map(s=>{
+    let out='';
+    for(let w=1;w<=p.weeks;w++){
+      const ls=lessonsOf(p,s.id,w); if(!ls.length) continue;
       out+='<div style="margin-top:8px"><div class="meta">'+weekName(w)+'</div>'+ls.map((l,i)=>
         '<div class="lesson"><div><div class="t">'+esc(l.title)+'</div><div class="d">'+esc(l.time||'')+(l.url?' · رابط مضاف':' · بلا رابط')+'</div></div>'+
-        '<button class="del" onclick="delLesson(\''+s.id+'\','+w+','+i+')">حذف</button></div>').join('')+'</div>'; }
-    return out?'<div style="margin-top:14px"><h3 style="color:'+s.color+'">'+esc(s.name)+'</h3>'+out+'</div>':''; }).join('')
-    || '<p class="empty">لم تُضف أي حصة في هذه البوابة.</p>';
-  const rows=logRows.map(e=>'<tr><td>'+esc(e.n)+'</td><td class="num">'+esc(e.p)+'</td><td>'+(e.g==='paid'?'مشتركين':'عامة')+
-    '</td><td>'+(e.s?esc((subj(e.s)||{}).name||e.s):'تسجيل دخول')+'</td><td class="meta">'+fmt(e.t)+'</td></tr>').join('');
-  const crows=codeRows.map(c=>'<tr><td><code>'+esc(c.code)+'</code></td><td>'+esc(c.name||'—')+'</td>'+
-    '<td class="num">'+esc(c.boundPhone||c.phone||'—')+'</td><td class="meta">'+(c.paid?'مدفوع':'يدوي')+'</td>'+
+        '<button class="del" onclick="delLesson(\''+s.id+'\','+w+','+i+')">حذف</button></div>').join('')+'</div>';
+    }
+    return out?'<div style="margin-top:14px"><h3 style="color:'+s.color+'">'+esc(s.name)+'</h3>'+out+'</div>':'';
+  }).join('') || '<p class="empty">لم تُضف أي حصة في هذه البوابة.</p>';
+
+  const rows=log.slice().reverse().map(e=>'<tr><td>'+esc(e.n)+'</td><td class="num">'+esc(e.p)+'</td>'+
+    '<td>'+(e.g==='paid'?'مشتركين':'عامة')+'</td><td>'+(e.s?esc((subj(e.s)||{}).name||e.s):'تسجيل دخول')+'</td>'+
+    '<td class="meta">'+fmt(e.t)+'</td></tr>').join('');
+
+  const codes=p.codes||[];
+  const codeRows=codes.slice().reverse().map((c,i)=>'<tr><td><code>'+esc(c.code)+'</code></td>'+
+    '<td>'+(c.by?esc(c.name||'—'):'<span class="meta">غير مستخدم</span>')+'</td>'+
+    '<td class="num">'+(c.by?esc(c.by):'—')+'</td>'+
     '<td><button class="del" onclick="delCode(\''+esc(c.code)+'\')">حذف</button></td></tr>').join('');
 
   return '<h1>لوحة المعلّم</h1><p class="sub">اختر البوابة التي تريد تحريرها.</p>'+
-  '<div class="tabs"><button class="'+(adminPortal==='free'?'on':'')+'" onclick="setTab(\'free\')">'+esc(conf.portals.free.title)+'</button>'+
-  '<button class="'+(gold?'on gold':'')+'" onclick="setTab(\'paid\')">'+esc(conf.portals.paid.title)+'</button></div>'+
+  '<div class="tabs">'+
+    '<button class="'+(adminPortal==='free'?'on':'')+'" onclick="adminPortal=\'free\';render()">'+esc(conf.portals.free.title)+'</button>'+
+    '<button class="'+(gold?'on gold':'')+'" onclick="adminPortal=\'paid\';render()">'+esc(conf.portals.paid.title)+'</button>'+
+  '</div>'+
 
   '<div class="panel"><h2>إضافة حصة — '+esc(p.title)+'</h2>'+
     '<div class="row"><div><label for="asub">المادة</label><select id="asub">'+opts+'</select></div>'+
     '<div><label for="aweek">الأسبوع</label><select id="aweek">'+wopts+'</select></div></div>'+
-    '<label for="atitle">عنوان الحصة</label><input id="atitle">'+
-    '<label for="atime">اليوم والوقت</label><input id="atime" placeholder="الأحد ٩:٠٠ صباحًا">'+
-    '<label for="aurl">رابط الحصة</label><input id="aurl" dir="ltr" placeholder="https://meet.google.com/...">'+
+    '<label for="atitle">عنوان الحصة</label><input id="atitle" placeholder="مثال: الكسور العشرية — الدرس الثاني">'+
+    '<label for="atime">اليوم والوقت</label><input id="atime" placeholder="مثال: الأحد ٩:٠٠ صباحًا">'+
+    '<label for="aurl">رابط الحصة</label><input id="aurl" type="url" dir="ltr" placeholder="https://meet.google.com/...">'+
     '<button class="btn" onclick="addLesson()">حفظ الحصة</button></div>'+
 
-  (gold?'<div class="panel"><h2>الاشتراك والدفع</h2>'+
-    '<p class="meta">الرمز يتولّد تلقائيًا بعد نجاح الدفع عبر ثواني. تُصدر رمزًا يدويًا فقط لمن دفع نقدًا.</p>'+
-    '<label for="price">السعر المكتوب للطالب</label><input id="price" value="'+esc(p.price||'')+'">'+
-    '<label for="pbaisa">السعر بالبيسة (٣ ريال = 3000)</label><input id="pbaisa" type="number" dir="ltr" value="'+(settings.priceBaisa||3000)+'">'+
+  (gold?
+  '<div class="panel"><h2>رموز الاشتراك</h2>'+
+    '<p class="meta">أنشئ الرموز وسلّمها للطالب بعد تأكد الدفع. كل رمز يرتبط بأول رقم يستخدمه.</p>'+
+    '<div class="row" style="margin-top:10px"><div style="max-width:150px"><label for="ncodes">كم رمزًا؟</label><input id="ncodes" type="number" min="1" max="50" value="5"></div></div>'+
+    '<button class="btn gold" onclick="genCodes()">إنشاء الرموز</button>'+
+    (codes.length?'<div class="scroll"><table><thead><tr><th>الرمز</th><th>المشترك</th><th>الجوال</th><th></th></tr></thead><tbody>'+codeRows+'</tbody></table></div>'+
+      '<button class="btn ghost small" style="margin-top:12px" onclick="copyFree()">نسخ الرموز غير المستخدمة</button>':'<p class="empty">لا توجد رموز بعد.</p>')+
+    '<label for="price" style="margin-top:18px">سعر الاشتراك</label><input id="price" value="'+esc(p.price||'')+'">'+
+    '<label for="payurl">رابط صفحة الدفع (ميسر / تاب / Stripe / PayPal)</label><input id="payurl" dir="ltr" value="'+esc(p.payUrl||'')+'" placeholder="https://...">'+
     '<label for="paynote">ما يحدث بعد الدفع</label><input id="paynote" value="'+esc(p.payNote||'')+'">'+
-    '<button class="btn gold" onclick="issueManual()">إصدار رمز يدوي</button>'+
-    (codeRows.length?'<div class="scroll"><table><thead><tr><th>الرمز</th><th>الاسم</th><th>الجوال</th><th>النوع</th><th></th></tr></thead>'+
-      '<tbody>'+crows+'</tbody></table></div>':'<p class="empty">لا توجد رموز بعد.</p>')+'</div>'
-  :'<div class="panel"><h2>رمز الدخول العام</h2><label for="fcode">الرمز الذي يوزّع على الطلاب</label>'+
-    '<input id="fcode" value="'+esc(settings.freeCode||'')+'"><p class="meta">محفوظ بعيدًا عن متناول الزوار.</p></div>')+
+    '<button class="btn ghost small" style="margin-top:14px" onclick="savePay()">حفظ إعدادات الدفع</button></div>'
+  :'<div class="panel"><h2>رمز الدخول العام</h2><label for="scode">الرمز الذي يوزّع على الطلاب</label>'+
+    '<input id="scode" value="'+esc(conf.portals.free.code)+'"><button class="btn ghost small" style="margin-top:14px" onclick="saveFreeCode()">حفظ الرمز</button></div>')+
 
   '<div class="panel"><h2>إعدادات '+esc(p.title)+'</h2>'+
     '<label for="ptitle">اسم البوابة</label><input id="ptitle" value="'+esc(p.title)+'">'+
-    '<label for="pdesc">وصفها</label><input id="pdesc" value="'+esc(p.desc||'')+'">'+
-    '<div class="row" style="margin-top:6px"><div><label for="cweek">الأسبوع الحالي</label><select id="cweek">'+wopts+'</select></div>'+
-    '<div><label for="nweeks">عدد الأسابيع</label><input id="nweeks" type="number" min="1" max="12" value="'+p.weeks+'"></div></div>'+
-    '<label for="ann">إعلان لطلاب هذه البوابة</label><textarea id="ann" rows="3">'+esc(p.announce)+'</textarea>'+
+    '<label for="pdesc">وصفها في الصفحة الرئيسية</label><input id="pdesc" value="'+esc(p.desc||'')+'">'+
+    '<div class="row" style="margin-top:6px">'+
+      '<div><label for="cweek">الأسبوع الحالي</label><select id="cweek">'+wopts+'</select></div>'+
+      '<div><label for="nweeks">عدد الأسابيع</label><input id="nweeks" type="number" min="1" max="12" value="'+p.weeks+'"></div></div>'+
+    '<label for="ann">إعلان يظهر لطلاب هذه البوابة</label><textarea id="ann" rows="3" placeholder="مثال: حصة الرياضيات اليوم متأخرة نصف ساعة.">'+esc(p.announce)+'</textarea>'+
     '<div class="row" style="margin-top:6px"><div><label for="glbl">نص زر المجموعة</label><input id="glbl" value="'+esc(p.groupLabel)+'"></div>'+
-    '<div><label for="gurl">رابط المجموعة</label><input id="gurl" dir="ltr" value="'+esc(p.groupUrl)+'"></div></div>'+
-    '<label for="stitle">عنوان الصفحة الرئيسية</label><input id="stitle" value="'+esc(conf.siteTitle)+'">'+
-    '<label for="sline">الجملة تحته</label><input id="sline" value="'+esc(conf.siteLine)+'">'+
+    '<div><label for="gurl">رابط القناة أو القروب</label><input id="gurl" dir="ltr" value="'+esc(p.groupUrl)+'" placeholder="https://chat.whatsapp.com/..."></div></div>'+
     '<button class="btn" onclick="savePortal()">حفظ ونشر</button></div>'+
 
   '<div class="panel"><h2>الحصص المضافة</h2>'+list+'</div>'+
 
-  '<div class="panel"><h2>سجل الدخول ('+logRows.length+')</h2>'+
-    (logRows.length?'<div class="scroll"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>البوابة</th><th>البطاقة</th><th>الوقت</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody></table></div><div class="row" style="margin-top:14px">'+
+  '<div class="panel"><h2>إعدادات الموقع</h2>'+
+    '<label for="stitle">عنوان الصفحة الرئيسية</label><input id="stitle" value="'+esc(conf.siteTitle)+'">'+
+    '<label for="sline">الجملة تحته</label><input id="sline" value="'+esc(conf.siteLine)+'">'+
+    '<div class="row" style="margin-top:6px"><div><label for="acode">رمز المعلّم</label><input id="acode" value="'+esc(conf.adminCode)+'"></div>'+
+    '<div><label for="cc">مفتاح الدولة</label><input id="cc" dir="ltr" value="'+esc(conf.cc)+'"></div></div>'+
+    '<button class="btn ghost small" style="margin-top:14px" onclick="saveSite()">حفظ</button></div>'+
+
+  '<div class="panel"><h2>سجل الدخول ('+log.length+')</h2>'+
+    (log.length?'<div class="scroll"><table><thead><tr><th>الاسم</th><th>الجوال</th><th>البوابة</th><th>البطاقة</th><th>الوقت</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div class="row" style="margin-top:14px">'+
       '<button class="btn ghost small" onclick="showPhones()">نسخ الأرقام للإرسال الجماعي</button>'+
-      '<button class="btn ghost small" onclick="loadAdmin()">تحديث</button></div>'+
+      '<button class="btn ghost small" onclick="showCsv()">عرض القائمة كاملة</button>'+
+      '<button class="btn danger small" onclick="clearLog()">مسح السجل</button></div>'+
       '<textarea id="csv" rows="6" dir="ltr" style="display:none;margin-top:10px"></textarea>'
     :'<p class="empty">لم يدخل أحد بعد.</p>')+'</div>';
 }
-function setTab(t){ adminPortal=t; render(); }
+
 async function addLesson(){
   const p=AP(), sid=document.getElementById('asub').value, w=+document.getElementById('aweek').value;
-  const title=document.getElementById('atitle').value.trim(), time=document.getElementById('atime').value.trim();
+  const title=document.getElementById('atitle').value.trim();
+  const time=document.getElementById('atime').value.trim();
   const url=safeUrl(document.getElementById('aurl').value);
-  if(!title) return toast('اكتب عنوان الحصة');
+  if(!title){ toast('اكتب عنوان الحصة'); return; }
   p.lessons[sid]=p.lessons[sid]||{}; p.lessons[sid][w]=p.lessons[sid][w]||[];
   p.lessons[sid][w].push({title,time,url});
-  await saveAll(); toast('تمت إضافة الحصة'); render();
+  await saveConf(); toast('تمت إضافة الحصة'); render();
 }
-async function delLesson(sid,w,i){ AP().lessons[sid][w].splice(i,1); await saveAll(); toast('حُذفت الحصة'); render(); }
+async function delLesson(sid,w,i){ AP().lessons[sid][w].splice(i,1); await saveConf(); toast('حُذفت الحصة'); render(); }
+
 async function savePortal(){
   const p=AP();
   p.title=document.getElementById('ptitle').value.trim()||p.title;
@@ -518,38 +465,62 @@ async function savePortal(){
   p.announce=document.getElementById('ann').value.trim();
   p.groupLabel=document.getElementById('glbl').value.trim()||'انضم للمجموعة';
   p.groupUrl=document.getElementById('gurl').value.trim();
+  await saveConf(); toast('حُفظ ونُشر'); render();
+}
+async function saveFreeCode(){
+  const v=document.getElementById('scode').value.trim();
+  if(!v){ toast('لا تترك الرمز فارغًا'); return; }
+  conf.portals.free.code=v; await saveConf(); toast('حُفظ الرمز');
+}
+async function savePay(){
+  const p=conf.portals.paid;
+  p.price=document.getElementById('price').value.trim();
+  p.payUrl=document.getElementById('payurl').value.trim();
+  p.payNote=document.getElementById('paynote').value.trim();
+  await saveConf(); toast('حُفظت إعدادات الدفع'); render();
+}
+async function saveSite(){
   conf.siteTitle=document.getElementById('stitle').value.trim()||conf.siteTitle;
   conf.siteLine=document.getElementById('sline').value.trim();
-  if(adminPortal==='paid'){
-    p.price=document.getElementById('price').value.trim();
-    p.payNote=document.getElementById('paynote').value.trim();
-    settings.priceBaisa=Math.max(100,+document.getElementById('pbaisa').value||3000);
-  } else {
-    settings.freeCode=document.getElementById('fcode').value.trim();
-  }
-  await saveAll(); toast('حُفظ ونُشر'); render();
+  const a=document.getElementById('acode').value.trim(); if(a) conf.adminCode=a;
+  conf.cc=document.getElementById('cc').value.replace(/\D/g,'');
+  await saveConf(); toast('حُفظت الإعدادات');
 }
-async function issueManual(){
-  try{ const r=await call('issueCode')({}); await loadAdminData(); render(); toast('الرمز: '+r.data.code); }
-  catch(e){ toast('تعذّر الإصدار'); }
+async function genCodes(){
+  const n=Math.min(50,Math.max(1,+document.getElementById('ncodes').value||1));
+  const p=conf.portals.paid;
+  for(let i=0;i<n;i++) p.codes.push({code:newCode(),by:'',name:'',ts:0});
+  await saveConf(); toast('أُنشئ '+n+' رمزًا'); render();
 }
-async function delCode(code){ await deleteDoc(doc(db,'codes',code)); await loadAdminData(); toast('حُذف الرمز'); render(); }
-async function loadAdmin(){ await loadAdminData(); render(); toast('حُدّث'); }
+async function delCode(code){
+  const p=conf.portals.paid;
+  p.codes=p.codes.filter(c=>c.code!==code);
+  await saveConf(); toast('حُذف الرمز'); render();
+}
+function copyFree(){
+  const free=conf.portals.paid.codes.filter(c=>!c.by).map(c=>c.code);
+  if(!free.length){ toast('كل الرموز مستخدمة'); return; }
+  try{ navigator.clipboard.writeText(free.join('\n')); }catch(e){}
+  toast(free.length+' رمزًا نُسخ');
+}
 function showPhones(){
   const seen=new Set(), nums=[];
-  logRows.forEach(e=>{ if(e.p&&!seen.has(e.p)){ seen.add(e.p); nums.push(e.p); } });
+  log.forEach(e=>{ const ph=intlPhone(e.p); if(ph&&!seen.has(ph)){ seen.add(ph); nums.push(ph); } });
   const t=document.getElementById('csv'); t.style.display='block'; t.value=nums.join('\n'); t.select();
   try{ navigator.clipboard.writeText(t.value); }catch(e){}
-  toast(nums.length+' رقمًا جاهزًا');
+  toast(nums.length+' رقمًا جاهزًا — انسخه');
 }
-
-Object.assign(window,{goLogin,doLogin,openSubject,toggleWeek,payNow,copyTxt,logout,teacherLogin,
-  setTab,addLesson,delLesson,savePortal,issueManual,delCode,loadAdmin,showPhones,render});
-Object.defineProperty(window,'view',{get:()=>view,set:v=>{view=v;}});
-Object.defineProperty(window,'portal',{get:()=>portal,set:v=>{portal=v;}});
-Object.defineProperty(window,'err',{get:()=>err,set:v=>{err=v;}});
+function showCsv(){
+  const t=document.getElementById('csv'); t.style.display='block';
+  t.value='الاسم,الجوال,البوابة,البطاقة,الوقت\n'+log.slice().reverse().map(e=>
+    [e.n,e.p,(e.g==='paid'?'مشتركين':'عامة'),(e.s?((subj(e.s)||{}).name||e.s):'تسجيل دخول'),fmt(e.t)].join(',')).join('\n');
+  t.select();
+}
+async function clearLog(){
+  if(!confirm('سيُمسح السجل نهائيًا. متابعة؟')) return;
+  log=[]; await sset(K_LOG,log,true); toast('مُسح السجل'); render();
+}
 boot();
-
 </script>
 </body>
 </html>
